@@ -1,4 +1,4 @@
-name := "checksum-gen"
+name := "ChecksumGen"
 
 version := "1.0"
 
