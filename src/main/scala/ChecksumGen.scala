@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+case class md5Tuple(md5sum: String, path: String, size: Long) {
+  override def toString = md5sum + ';' + path + ';' + size
+}
+
 object ChecksumGen {
 
   import scala.io.Source
@@ -30,16 +34,12 @@ object ChecksumGen {
     md5.digest.map("%02x".format(_)).mkString
   }
 
-  type md5Tuple = (String, String, Long)
-  private def printMD5(md5: md5Tuple) =
-    md5 match { case (m, p, s) => println(m + ';' + p + ';' + s) }
-
   private def fileMD5(file: File) = {
     val fileBuffer = Source.fromFile(file, "ISO-8859-1")
     val fileBytes = fileBuffer.map(_.toByte)
     val md5sum = md5(fileBytes)
     fileBuffer.close
-    (md5sum, file.getAbsolutePath, file.length)
+    md5Tuple(md5sum, file.getAbsolutePath, file.length)
   }
 
   private def chunkMD5(file: File, chunkSize: Int) = {
@@ -55,7 +55,7 @@ object ChecksumGen {
       val path = file.getAbsolutePath
       md5sumArray.zipWithIndex.map {
         case (m, i) =>
-          (m, path + "." + i, if (i == lastChunk) lastSize else chunkSize)
+          md5Tuple(m, path + "." + i, if (i == lastChunk) lastSize else chunkSize)
       }
     } else
       Array[md5Tuple]()
@@ -89,19 +89,19 @@ object ChecksumGen {
         val source = new File(fileName)
         if (!source.exists) println("input source does not exist")
         else if (source.isFile)
-          printMD5(fileMD5(source))
+          println(fileMD5(source))
         else
-          collect(source) foreach printMD5
+          collect(source) foreach println
       }
       case fileName :: chunkSizeStr :: Nil => {
         val source = new File(fileName)
         val chunkSize = chunkSizeStr.toInt
         if (!source.exists) println("input source does not exist")
         else if (source.isFile)
-          chunkMD5(source, chunkSize) foreach printMD5
+          chunkMD5(source, chunkSize) foreach println
         else {
           collect(source, chunkSize) foreach {
-            case (f, c) => printMD5(f); c foreach printMD5
+            case (f, c) => println(f); c foreach println
           }
         }
       }
@@ -109,4 +109,31 @@ object ChecksumGen {
     }
   }
 
+}
+
+object ChecksumGen4zip {
+
+  import java.io.{ File, FileInputStream }
+  import java.util.zip.{ ZipEntry, ZipException, ZipFile, ZipInputStream }
+
+  private def zipMD5(file: File) = {
+    try {
+      val zf = new ZipFile(file)
+      val zis = new ZipInputStream(new FileInputStream(file))
+      val entries = Iterator.continually { zis.getNextEntry } takeWhile(null != )
+      for (e <- entries) {
+        val path = e.getName
+        val is = zf.getInputStream(e)
+        
+        is.close
+      }
+      Array[md5Tuple]()
+    } catch {
+      case e: Exception => e.printStackTrace; Array[md5Tuple]()
+    }
+  }
+
+  def main(args: Array[String]) = {
+
+  }
 }
