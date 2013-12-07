@@ -20,7 +20,7 @@ object ChecksumGen {
   import java.io.File
   import java.security.MessageDigest
 
-  def md5(bytes: Iterator[Byte]) = {
+  private def md5(bytes: Iterator[Byte]) = {
     val md5 = MessageDigest.getInstance("MD5")
     try {
       bytes.foreach(md5.update)
@@ -31,6 +31,8 @@ object ChecksumGen {
   }
 
   type md5Tuple = (String, String, Long)
+  private def printMD5(md5: md5Tuple) =
+    md5 match { case (m, p, s) => println(m + ';' + p + ';' + s) }
 
   private def fileMD5(file: File) = {
     val fileBuffer = Source.fromFile(file, "ISO-8859-1")
@@ -87,24 +89,20 @@ object ChecksumGen {
         val source = new File(fileName)
         if (!source.exists) println("input source does not exist")
         else if (source.isFile)
-          fileMD5(source) match { case (m, p, s) => println(m + ';' + p + ';' + s) }
-        else {
-          val md5list = collect(source)
-          for ((m, p, s) <- md5list) println(m + ';' + p + ';' + s)
-        }
+          printMD5(fileMD5(source))
+        else
+          collect(source) foreach printMD5
       }
       case fileName :: chunkSizeStr :: Nil => {
         val source = new File(fileName)
         val chunkSize = chunkSizeStr.toInt
         if (!source.exists) println("input source does not exist")
         else if (source.isFile)
-          chunkMD5(source, chunkSize) foreach {
-            case (m, p, s) => println(m + ';' + p + ';' + s)
-          }
+          chunkMD5(source, chunkSize) foreach printMD5
         else {
-          val md5tree = collect(source, chunkSize)
-          val md5list = md5tree.flatMap { case (f, c) => Array(f) ++ c }
-          for ((m, p, s) <- md5list) println(m + ';' + p + ';' + s)
+          collect(source, chunkSize) foreach {
+            case (f, c) => printMD5(f); c foreach printMD5
+          }
         }
       }
       case _ => println("usage: ChecksumGen <source> [<chunk size>]")
