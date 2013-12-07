@@ -24,7 +24,6 @@ object ChecksumGen {
     val md5 = MessageDigest.getInstance("MD5")
     try {
       bytes.foreach(md5.update)
-      //md5.update(bytes.toArray)
     } catch {
       case e: Exception => throw e
     }
