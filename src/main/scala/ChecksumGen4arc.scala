@@ -2,10 +2,7 @@ object ChecksumGen4arc {
 
   import java.io.{ File, InputStream }
   import org.apache.commons.compress.archivers.zip.ZipFile
-  import org.apache.commons.codec.digest.DigestUtils
-
-  private def md5sum(is: InputStream) =
-    DigestUtils.md5(is).map("%02x".format(_)).mkString
+  import org.apache.commons.codec.digest.DigestUtils.md5Hex
 
   private def zipMD5(file: File) = {
     try {
@@ -18,7 +15,7 @@ object ChecksumGen4arc {
         val path = e.getName
         val size = e.getSize
         val is = zf.getInputStream(e)
-        val md5 = md5sum(is)
+        val md5 = md5Hex(is)
         is.close
         md5Tuple(md5, path, size)
       }
