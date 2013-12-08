@@ -22,24 +22,14 @@ object ChecksumGen {
 
   import scala.io.Source
   import java.io.File
-  import java.security.MessageDigest
-
-  private def md5(bytes: Iterator[Byte]) = {
-    val md5 = MessageDigest.getInstance("MD5")
-    try {
-      bytes.foreach(md5.update)
-    } catch {
-      case e: Exception => throw e
-    }
-    md5.digest.map("%02x".format(_)).mkString
-  }
+  import util.Hash
 
   private def fileMD5(file: File) = {
     val fileBuffer = Source.fromFile(file, "ISO-8859-1")
     val fileBytes = fileBuffer.map(_.toByte)
-    val md5sum = md5(fileBytes)
+    val md5 = Hash.md5sum(fileBytes)
     fileBuffer.close
-    md5Tuple(md5sum, file.getAbsolutePath, file.length)
+    md5Tuple(md5, file.getAbsolutePath, file.length)
   }
 
   private def chunkMD5(file: File, chunkSize: Int) = {
@@ -48,7 +38,7 @@ object ChecksumGen {
       val fileBuffer = Source.fromFile(file, "ISO-8859-1")
       val fileBytes = fileBuffer.map(_.toByte)
       val chunks = fileBytes.grouped(chunkSize).map(_.iterator)
-      val md5sumArray = chunks.map(md5).toArray
+      val md5sumArray = chunks.map(Hash.md5sum).toArray
       fileBuffer.close
       val lastChunk = size / chunkSize
       val lastSize = size % chunkSize
@@ -109,31 +99,4 @@ object ChecksumGen {
     }
   }
 
-}
-
-object ChecksumGen4zip {
-
-  import java.io.{ File, FileInputStream }
-  import java.util.zip.{ ZipEntry, ZipException, ZipFile, ZipInputStream }
-
-  private def zipMD5(file: File) = {
-    try {
-      val zf = new ZipFile(file)
-      val zis = new ZipInputStream(new FileInputStream(file))
-      val entries = Iterator.continually { zis.getNextEntry } takeWhile(null != )
-      for (e <- entries) {
-        val path = e.getName
-        val is = zf.getInputStream(e)
-        
-        is.close
-      }
-      Array[md5Tuple]()
-    } catch {
-      case e: Exception => e.printStackTrace; Array[md5Tuple]()
-    }
-  }
-
-  def main(args: Array[String]) = {
-
-  }
 }
