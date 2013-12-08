@@ -11,9 +11,9 @@ object ChecksumGen4arc {
     try {
       val zf = new ZipFile(file)
       val entries = zf.getEntries
-      val files = Iterator.continually(entries.nextElement)
-        .takeWhile(e => entries.hasMoreElements)
-        .filter(!_.isDirectory)
+      val files = Iterator.continually {
+        if (entries.hasMoreElements) entries.nextElement else null
+      }.takeWhile(null !=).filter(!_.isDirectory)
       files map { e =>
         val path = e.getName
         val size = e.getSize
