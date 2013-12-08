@@ -26,7 +26,7 @@ object ChecksumGen4zip {
 
   def main(args: Array[String]) = {
     if (args.length < 1)
-      println("usage: ChecksumGen4zip <zip file>")
+      println("usage: ChecksumGen4zip <zip|jar|apk file (UTF-8 only)>")
     else
       zipMD5(new File(args(0))) foreach println
   }
