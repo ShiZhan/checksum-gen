@@ -18,9 +18,9 @@ object ChecksumGen4zip {
         val md5 = Hash.md5sum(bytes.toIterator)
         is.close
         md5Tuple(md5, path, size)
-      } toArray
+      }
     } catch {
-      case e: Exception => e.printStackTrace; Array[md5Tuple]()
+      case e: Exception => e.printStackTrace; Iterator[md5Tuple]()
     }
   }
 
