@@ -1,15 +1,15 @@
 object ChecksumGen4zip {
 
   import java.io.{ File, FileInputStream }
-  import java.util.zip.{ ZipEntry, ZipException, ZipFile, ZipInputStream }
+  import java.util.zip.{ ZipFile, ZipInputStream }
   import util.Hash
 
   private def zipMD5(file: File) = {
     try {
       val zf = new ZipFile(file)
       val zis = new ZipInputStream(new FileInputStream(file))
-      val entries = Iterator.continually { zis.getNextEntry }
-        .takeWhile(null !=) filter (!_.isDirectory)
+      val entries =
+        Iterator.continually(zis.getNextEntry).takeWhile(null !=).filter(!_.isDirectory)
       entries map { e =>
         val path = e.getName
         val size = e.getSize
