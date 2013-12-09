@@ -31,11 +31,8 @@ object ChecksumGen {
     val size = file.length
     if (size > chunkSize) {
       val fileBuffer = Source.fromFile(file, "ISO-8859-1")
-      val fileBytes = fileBuffer.map(_.toByte)
-      val chunks = fileBytes.grouped(chunkSize).map { b =>
-        new ByteArrayInputStream(b.toArray)
-      }
-      val md5Array = chunks.map(md5Hex).toArray
+      val chunks = fileBuffer.map(_.toByte).grouped(chunkSize)
+      val md5Array = chunks.map { b => md5Hex(new ByteArrayInputStream(b.toArray)) }.toArray
       fileBuffer.close
       val lastChunk = size / chunkSize
       val lastSize = size % chunkSize
