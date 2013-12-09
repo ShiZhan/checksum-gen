@@ -1,6 +1,6 @@
 object ChecksumGen4zip {
 
-  import java.io.{ File, InputStream }
+  import java.io.File
   import org.apache.commons.compress.archivers.zip.ZipFile
   import org.apache.commons.codec.digest.DigestUtils.md5Hex
 
