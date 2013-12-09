@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import scala.io.Source
-import java.io.{ File, FileInputStream, BufferedInputStream, ByteArrayInputStream }
-import org.apache.commons.codec.digest.DigestUtils.md5Hex
-
 object ChecksumGen {
+
+  import scala.io.Source
+  import java.io.{ File, FileInputStream, BufferedInputStream }
+  import org.apache.commons.codec.digest.DigestUtils.md5Hex
 
   private def fileMD5(file: File) = {
     val fIS = new BufferedInputStream(new FileInputStream(file))
@@ -32,7 +32,7 @@ object ChecksumGen {
     if (size > chunkSize) {
       val fileBuffer = Source.fromFile(file, "ISO-8859-1")
       val chunks = fileBuffer.map(_.toByte).grouped(chunkSize)
-      val md5Array = chunks.map { b => md5Hex(new ByteArrayInputStream(b.toArray)) }.toArray
+      val md5Array = chunks.map { bytes => md5Hex(bytes.toArray) }.toArray
       fileBuffer.close
       val lastChunk = size / chunkSize
       val lastSize = size % chunkSize
