@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 object ChecksumGen {
 
   import scala.io.Source
   import java.io.{ File, FileInputStream, BufferedInputStream }
+  import org.apache.commons.compress.archivers.zip.ZipFile
   import org.apache.commons.codec.digest.DigestUtils.md5Hex
 
   private def fileMD5(file: File) = {
@@ -45,9 +45,29 @@ object ChecksumGen {
       Array[md5Tuple]()
   }
 
-  private def listAllFiles(f: File): Array[File] = {
-    assert(f.isDirectory)
-    val list = f.listFiles
+  private def zipMD5(file: File) = {
+    try {
+      val zf = new ZipFile(file)
+      val entries = zf.getEntries
+      val files = Iterator.continually {
+        if (entries.hasMoreElements) entries.nextElement else null
+      }.takeWhile(null !=).filter(!_.isDirectory)
+      files map { e =>
+        val path = e.getName
+        val size = e.getSize
+        val is = zf.getInputStream(e)
+        val md5 = md5Hex(is)
+        is.close
+        md5Tuple(md5, path, size)
+      }
+    } catch {
+      case e: Exception => e.printStackTrace; Iterator[md5Tuple]()
+    }
+  }
+
+  private def listAllFiles(dir: File): Array[File] = {
+    assert(dir.isDirectory)
+    val list = dir.listFiles
     list ++ list.filter(_.isDirectory).flatMap(listAllFiles)
   }
 
@@ -60,6 +80,14 @@ object ChecksumGen {
           println(fileMD5(source))
         else
           listAllFiles(source).filter(_.isFile) foreach { f => println(fileMD5(f)) }
+      }
+      case fileName :: "--zip" :: Nil => {
+        val source = new File(fileName)
+        if (!source.exists) println("input source does not exist")
+        else if (source.isFile) {
+          zipMD5(source) foreach println
+        } else
+          println("input source is not a file")
       }
       case fileName :: chunkSizeStr :: Nil => {
         val source = new File(fileName)
@@ -74,7 +102,7 @@ object ChecksumGen {
           }
         }
       }
-      case _ => println("usage: ChecksumGen <source> [<chunk size>]")
+      case _ => println("usage: ChecksumGen <source> [<chunk size> <--zip>]")
     }
   }
 
