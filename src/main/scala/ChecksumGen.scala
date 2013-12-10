@@ -45,26 +45,10 @@ object ChecksumGen {
       Array[md5Tuple]()
   }
 
-  private def collect(dir: File, chunkSize: Int) = {
-
-    def checkDir(d: File): Array[(md5Tuple, Array[md5Tuple])] = {
-      val (files, dirs) = d.listFiles.partition(_.isFile)
-      val md5Files = files.map { f => (fileMD5(f), chunkMD5(f, chunkSize)) }
-      md5Files ++ dirs.flatMap(checkDir)
-    }
-
-    checkDir(dir)
-  }
-
-  private def collect(dir: File) = {
-
-    def checkDir(d: File): Array[md5Tuple] = {
-      val (files, dirs) = d.listFiles.partition(_.isFile)
-      val md5Files = files.map { fileMD5 }
-      md5Files ++ dirs.flatMap(checkDir)
-    }
-
-    checkDir(dir)
+  private def listAllFiles(f: File): Array[File] = {
+    assert(f.isDirectory)
+    val list = f.listFiles
+    list ++ list.filter(_.isDirectory).flatMap(listAllFiles)
   }
 
   def main(args: Array[String]) = {
@@ -75,7 +59,7 @@ object ChecksumGen {
         else if (source.isFile)
           println(fileMD5(source))
         else
-          collect(source) foreach println
+          listAllFiles(source).filter(_.isFile) foreach { f => println(fileMD5(f)) }
       }
       case fileName :: chunkSizeStr :: Nil => {
         val source = new File(fileName)
@@ -84,8 +68,9 @@ object ChecksumGen {
         else if (source.isFile)
           chunkMD5(source, chunkSize) foreach println
         else {
-          collect(source, chunkSize) foreach {
-            case (f, c) => println(f); c foreach println
+          listAllFiles(source).filter(_.isFile) foreach { f =>
+            println(fileMD5(f))
+            chunkMD5(f, chunkSize) foreach println
           }
         }
       }
