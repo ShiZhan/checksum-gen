@@ -105,11 +105,22 @@ object ChecksumGen {
     }
   }
 
-  /*
-   * @TODO: handler for bz2
-   */
   private def checkBz2(file: File) = {
-    Iterator[md5Tuple]()
+    val fis = new FileInputStream(file)
+    val bzis = new BZip2CompressorInputStream(fis)
+    val tis = new TarArchiveInputStream(bzis)
+    try {
+      val files = Iterator.continually(tis.getNextTarEntry)
+        .takeWhile(null !=).filter(_.isFile)
+      files map { e =>
+        val path = e.getName
+        val size = e.getSize
+        val md5 = md5HexChunk(tis, size)
+        md5Tuple(md5, path, size)
+      }
+    } catch {
+      case e: Exception => e.printStackTrace; Iterator[md5Tuple]()
+    }
   }
 
   /*
