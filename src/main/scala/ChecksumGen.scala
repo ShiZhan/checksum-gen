@@ -20,7 +20,7 @@ case class md5Tuple(md5sum: String, path: String, size: Long) {
 object ChecksumGen {
 
   import scala.io.Source
-  import java.io.{ File, FileInputStream, BufferedInputStream }
+  import java.io.{ File, InputStream, FileInputStream, BufferedInputStream }
   import org.apache.commons.compress.archivers.zip.ZipFile
   import org.apache.commons.compress.archivers.ArchiveStreamFactory
   import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
@@ -28,14 +28,18 @@ object ChecksumGen {
   import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
   import org.apache.commons.codec.digest.DigestUtils.md5Hex
 
-  private def fileMD5(file: File) = {
+  private def md5HexChunk(is: InputStream, size: Int) = {
+
+  }
+
+  private def checkFile(file: File) = {
     val fIS = new BufferedInputStream(new FileInputStream(file))
     val md5 = md5Hex(fIS)
     fIS.close
     md5Tuple(md5, file.getAbsolutePath, file.length)
   }
 
-  private def chunkMD5(file: File, chunkSize: Int) = {
+  private def checkChunk(file: File, chunkSize: Int) = {
     val size = file.length
     if (size > chunkSize) {
       val fileBuffer = Source.fromFile(file, "ISO-8859-1")
@@ -53,7 +57,7 @@ object ChecksumGen {
       Array[md5Tuple]()
   }
 
-  private def zipMD5(file: File) = {
+  private def checkZip(file: File) = {
     try {
       val zf = new ZipFile(file)
       val entries = zf.getEntries
@@ -73,7 +77,7 @@ object ChecksumGen {
     }
   }
 
-  private def gzipMD5(file: File) = {
+  private def checkGzip(file: File) = {
     val fis = new FileInputStream(file)
     val gzis = new GzipCompressorInputStream(fis)
     val tis = new TarArchiveInputStream(gzis)
@@ -93,13 +97,31 @@ object ChecksumGen {
   /*
    * @TODO: handler for bz2
    */
-  private def bz2MD5(file: File) = {
+  private def checkBz2(file: File) = {
+    Iterator[md5Tuple]()
   }
 
   /*
    * @TODO: handler for 7zip
    */
-  private def sevenZipMD5(file: File) = {
+  private def check7Zip(file: File) = {
+    Iterator[md5Tuple]()
+  }
+
+  /*
+   * @TODO: handler for all archives with extension detection
+   */
+  private def checkArc(file: File) = {
+    val name = file.getName
+    val ext = name.substring(name.lastIndexOf(".") + 1)
+    ext match {
+      case "zip" => checkZip(file)
+      case "tgz" => checkGzip(file)
+      case "gz" => checkGzip(file)
+      case "bz2" => checkBz2(file)
+      case "7z" => check7Zip(file)
+      case _ => Iterator[md5Tuple]()
+    }
   }
 
   private def listAllFiles(dir: File): Array[File] = {
@@ -114,15 +136,15 @@ object ChecksumGen {
         val source = new File(fileName)
         if (!source.exists) println("input source does not exist")
         else if (source.isFile)
-          println(fileMD5(source))
+          println(checkFile(source))
         else
-          listAllFiles(source).filter(_.isFile) foreach { f => println(fileMD5(f)) }
+          listAllFiles(source).filter(_.isFile) foreach { f => println(checkFile(f)) }
       }
       case fileName :: "--zip" :: Nil => {
         val source = new File(fileName)
         if (!source.exists) println("input source does not exist")
         else if (source.isFile) {
-          gzipMD5(source) foreach println
+          checkArc(source) foreach println
         } else
           println("input source is not a file")
       }
@@ -131,11 +153,11 @@ object ChecksumGen {
         val chunkSize = chunkSizeStr.toInt
         if (!source.exists) println("input source does not exist")
         else if (source.isFile)
-          chunkMD5(source, chunkSize) foreach println
+          checkChunk(source, chunkSize) foreach println
         else {
           listAllFiles(source).filter(_.isFile) foreach { f =>
-            println(fileMD5(f))
-            chunkMD5(f, chunkSize) foreach println
+            println(checkFile(f))
+            checkChunk(f, chunkSize) foreach println
           }
         }
       }
