@@ -137,6 +137,7 @@ object ChecksumGen {
       case "jar" => checkZip(file)
       case "war" => checkZip(file)
       case "apk" => checkZip(file)
+      case "epub" => checkZip(file)
       case "tgz" => checkGzip(file)
       case "gz" => checkGzip(file)
       case "bz2" => checkBz2(file)
