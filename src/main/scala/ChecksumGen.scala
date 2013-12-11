@@ -108,13 +108,9 @@ object ChecksumGen {
     Iterator[md5Tuple]()
   }
 
-  /*
-   * @TODO: handler for all archives with extension detection
-   */
   private def checkArc(file: File) = {
-    val name = file.getName
-    val ext = name.substring(name.lastIndexOf(".") + 1)
-    ext match {
+    val fileNameExtension = file.getName.split('.').last 
+    fileNameExtension match {
       case "zip" => checkZip(file)
       case "tgz" => checkGzip(file)
       case "gz" => checkGzip(file)
