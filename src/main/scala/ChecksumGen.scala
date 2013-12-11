@@ -19,14 +19,11 @@ case class md5Tuple(md5sum: String, path: String, size: Long) {
 
 object ChecksumGen {
 
-  import scala.io.Source
-  import scala.collection.mutable.ArrayBuffer
   import java.io.{ File, InputStream, FileInputStream, BufferedInputStream }
   import org.apache.commons.compress.archivers.zip.ZipFile
-  import org.apache.commons.compress.archivers.ArchiveStreamFactory
   import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-  import org.apache.commons.compress.archivers.tar.TarArchiveEntry
   import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
+  import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
   import org.apache.commons.codec.digest.DigestUtils.{ getDigest, md5Hex }
   import org.apache.commons.codec.binary.Hex.encodeHexString
 
