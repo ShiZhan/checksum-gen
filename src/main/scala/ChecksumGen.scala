@@ -20,16 +20,28 @@ case class md5Tuple(md5sum: String, path: String, size: Long) {
 object ChecksumGen {
 
   import scala.io.Source
+  import scala.collection.mutable.ArrayBuffer
   import java.io.{ File, InputStream, FileInputStream, BufferedInputStream }
   import org.apache.commons.compress.archivers.zip.ZipFile
   import org.apache.commons.compress.archivers.ArchiveStreamFactory
   import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
   import org.apache.commons.compress.archivers.tar.TarArchiveEntry
   import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
-  import org.apache.commons.codec.digest.DigestUtils.md5Hex
+  import org.apache.commons.codec.digest.DigestUtils.{ getDigest, md5Hex }
+  import org.apache.commons.codec.binary.Hex.encodeHexString
 
-  private def md5HexChunk(is: InputStream, size: Int) = {
-
+  val STREAM_BUFFER_LENGTH = 1024 * 64
+  private def md5HexChunk(data: InputStream, size: Int) = {
+    val MD = getDigest("MD5")
+    var buffer = new Array[Byte](STREAM_BUFFER_LENGTH)
+    var total = 0
+    val goal = size min data.available
+    while (total < goal) {
+      val read = data.read(buffer, 0, (goal - total) min STREAM_BUFFER_LENGTH)
+      total += read
+      MD.update(buffer, 0, read)
+    }
+    encodeHexString(MD.digest)
   }
 
   private def checkFile(file: File) = {
@@ -42,17 +54,16 @@ object ChecksumGen {
   private def checkChunk(file: File, chunkSize: Int) = {
     val size = file.length
     if (size > chunkSize) {
-      val fileBuffer = Source.fromFile(file, "ISO-8859-1")
-      val chunks = fileBuffer.map(_.toByte).grouped(chunkSize)
-      val md5Array = chunks.map { bytes => md5Hex(bytes.toArray) }.toArray
-      fileBuffer.close
       val lastChunk = size / chunkSize
       val lastSize = size % chunkSize
       val path = file.getAbsolutePath
-      md5Array.zipWithIndex.map {
-        case (m, i) =>
-          md5Tuple(m, path + "." + i, if (i == lastChunk) lastSize else chunkSize)
-      }
+      val is = new BufferedInputStream(new FileInputStream(file))
+      (0 to lastChunk.toInt).map { i =>
+        val m = md5HexChunk(is, chunkSize)
+        val p = path + "." + i
+        val s = if (i == lastChunk) lastSize else chunkSize
+        md5Tuple(m, p, s)
+      } toArray
     } else
       Array[md5Tuple]()
   }
@@ -109,9 +120,12 @@ object ChecksumGen {
   }
 
   private def checkArc(file: File) = {
-    val fileNameExtension = file.getName.split('.').last 
+    val fileNameExtension = file.getName.split('.').last
     fileNameExtension match {
       case "zip" => checkZip(file)
+      case "jar" => checkZip(file)
+      case "war" => checkZip(file)
+      case "apk" => checkZip(file)
       case "tgz" => checkGzip(file)
       case "gz" => checkGzip(file)
       case "bz2" => checkBz2(file)
