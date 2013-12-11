@@ -142,7 +142,7 @@ object ChecksumGen {
       case "gz" => checkGzip(file)
       case "bz2" => checkBz2(file)
       case "7z" => check7Zip(file)
-      case _ => Iterator[md5Tuple]()
+      case _ => Iterator(checkFile(file))
     }
   }
 
