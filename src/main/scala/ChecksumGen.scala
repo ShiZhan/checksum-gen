@@ -31,11 +31,11 @@ object ChecksumGen {
   import org.apache.commons.codec.binary.Hex.encodeHexString
 
   val STREAM_BUFFER_LENGTH = 1024 * 64
-  private def md5HexChunk(data: InputStream, size: Int) = {
+  private def md5HexChunk(data: InputStream, size: Long) = {
     val MD = getDigest("MD5")
     var buffer = new Array[Byte](STREAM_BUFFER_LENGTH)
     var total = 0
-    val goal = size min data.available
+    val goal = size.toInt min data.available
     while (total < goal) {
       val read = data.read(buffer, 0, (goal - total) min STREAM_BUFFER_LENGTH)
       total += read
@@ -51,19 +51,21 @@ object ChecksumGen {
     md5Tuple(md5, file.getAbsolutePath, file.length)
   }
 
-  private def checkChunk(file: File, chunkSize: Int) = {
-    val size = file.length
-    if (size > chunkSize) {
-      val lastChunk = size / chunkSize
-      val lastSize = size % chunkSize
-      val path = file.getAbsolutePath
-      val is = new BufferedInputStream(new FileInputStream(file))
-      (0 to lastChunk.toInt).map { i =>
-        val m = md5HexChunk(is, chunkSize)
-        val p = path + "." + i
-        val s = if (i == lastChunk) lastSize else chunkSize
-        md5Tuple(m, p, s)
-      } toArray
+  private def checkChunk(file: File, chunkSize: Long) = {
+    val fileSize = file.length
+    if (fileSize > chunkSize) {
+      val indexOfLastChunk = fileSize / chunkSize
+      val sizeOfLastChunk = fileSize % chunkSize
+      val fileAbsolutePath = file.getAbsolutePath
+      val fileInputStream = new BufferedInputStream(new FileInputStream(file))
+      val md5Array = (0 to indexOfLastChunk.toInt).map { i =>
+        val md5 = md5HexChunk(fileInputStream, chunkSize)
+        val path = fileAbsolutePath + "." + i
+        val size = if (i == indexOfLastChunk) sizeOfLastChunk else chunkSize
+        md5Tuple(md5, path, size)
+      }.toArray
+      fileInputStream.close
+      md5Array
     } else
       Array[md5Tuple]()
   }
@@ -98,7 +100,8 @@ object ChecksumGen {
       files map { e =>
         val path = e.getName
         val size = e.getSize
-        md5Tuple("WIP", path, size)
+        val md5 = md5HexChunk(tis, size)
+        md5Tuple(md5, path, size)
       }
     } catch {
       case e: Exception => e.printStackTrace; Iterator[md5Tuple]()
@@ -160,7 +163,7 @@ object ChecksumGen {
       }
       case fileName :: chunkSizeStr :: Nil => {
         val source = new File(fileName)
-        val chunkSize = chunkSizeStr.toInt
+        val chunkSize = chunkSizeStr.toLong
         if (!source.exists) println("input source does not exist")
         else if (source.isFile)
           checkChunk(source, chunkSize) foreach println
