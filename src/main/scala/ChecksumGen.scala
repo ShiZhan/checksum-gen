@@ -22,6 +22,10 @@ object ChecksumGen {
   import scala.io.Source
   import java.io.{ File, FileInputStream, BufferedInputStream }
   import org.apache.commons.compress.archivers.zip.ZipFile
+  import org.apache.commons.compress.archivers.ArchiveStreamFactory
+  import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+  import org.apache.commons.compress.archivers.tar.TarArchiveEntry
+  import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
   import org.apache.commons.codec.digest.DigestUtils.md5Hex
 
   private def fileMD5(file: File) = {
@@ -69,6 +73,35 @@ object ChecksumGen {
     }
   }
 
+  private def gzipMD5(file: File) = {
+    val fis = new FileInputStream(file)
+    val gzis = new GzipCompressorInputStream(fis)
+    val tis = new TarArchiveInputStream(gzis)
+    try {
+      val files = Iterator.continually(tis.getNextTarEntry)
+        .takeWhile(null !=).filter(_.isFile)
+      files map { e =>
+        val path = e.getName
+        val size = e.getSize
+        md5Tuple("WIP", path, size)
+      }
+    } catch {
+      case e: Exception => e.printStackTrace; Iterator[md5Tuple]()
+    }
+  }
+
+  /*
+   * @TODO: handler for bz2
+   */
+  private def bz2MD5(file: File) = {
+  }
+
+  /*
+   * @TODO: handler for 7zip
+   */
+  private def sevenZipMD5(file: File) = {
+  }
+
   private def listAllFiles(dir: File): Array[File] = {
     assert(dir.isDirectory)
     val list = dir.listFiles
@@ -89,7 +122,7 @@ object ChecksumGen {
         val source = new File(fileName)
         if (!source.exists) println("input source does not exist")
         else if (source.isFile) {
-          zipMD5(source) foreach println
+          gzipMD5(source) foreach println
         } else
           println("input source is not a file")
       }
