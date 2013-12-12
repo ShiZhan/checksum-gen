@@ -149,7 +149,7 @@ object ChecksumGen {
     "bz2" -> checkBz2,
     "7z" -> check7Zip)
   private val knownExt = arcCheckers map { case (k, c) => k } toSet
-  private def defaultChecker(f: File) = Iterator(checkFile(f))
+  private def defaultChecker(f: File) = Iterator[md5Tuple]()
   private def checkArc(file: File) = {
     val fileNameExtension = file.getName.split('.').last
     arcCheckers.getOrElse(fileNameExtension, defaultChecker _)(file)
