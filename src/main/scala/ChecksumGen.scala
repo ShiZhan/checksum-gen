@@ -171,7 +171,7 @@ object ChecksumGen {
 
   import java.io.File
   import FileCheckers.{ checkFile, checkChunk }
-  import ArchiveCheckers.checkArc
+  import ArchiveCheckers.{ knownExt, checkArc }
 
   private def listAllFiles(dir: File): Array[File] = {
     assert(dir.isDirectory)
@@ -193,7 +193,10 @@ object ChecksumGen {
         val source = new File(fileName)
         if (!source.exists) println("input source does not exist")
         else if (source.isFile) {
-          checkArc(source) foreach println
+          if (knownExt contains source.getName.split('.').last)
+            checkArc(source) foreach println
+          else
+            println("Unknown archive format")
         } else
           println("input source is not a file")
       }
