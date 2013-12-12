@@ -139,7 +139,7 @@ object FileCheckers {
   import java.io.{ File, FileInputStream, BufferedInputStream }
   import org.apache.commons.codec.digest.DigestUtils.md5Hex
   import DigestUtilsAddon.md5HexChunk
-  
+
   def checkFile(file: File) = {
     val fIS = new BufferedInputStream(new FileInputStream(file))
     val md5 = md5Hex(fIS)
@@ -170,7 +170,7 @@ object FileCheckers {
 object ChecksumGen {
 
   import java.io.File
-  import FileCheckers.{checkFile, checkChunk}
+  import FileCheckers.{ checkFile, checkChunk }
   import ArchiveCheckers.checkArc
 
   private def listAllFiles(dir: File): Array[File] = {
