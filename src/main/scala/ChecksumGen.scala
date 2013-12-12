@@ -130,20 +130,29 @@ object ChecksumGen {
     Iterator[md5Tuple]()
   }
 
+  type arcChecker = (File => Iterator[md5Tuple])
+  private val arcCheckers = Map[String, arcChecker](
+    "zip" -> checkZip,
+    "jar" -> checkZip,
+    "war" -> checkZip,
+    "apk" -> checkZip,
+    "epub" -> checkZip,
+    "odt" -> checkZip,
+    "ods" -> checkZip,
+    "odp" -> checkZip,
+    "odg" -> checkZip,
+    "docx" -> checkZip,
+    "xlsx" -> checkZip,
+    "pptx" -> checkZip,
+    "tgz" -> checkGzip,
+    "gz" -> checkGzip,
+    "bz2" -> checkBz2,
+    "7z" -> check7Zip)
+  private val knownExt = arcCheckers map { case (k, c) => k } toSet
+  private def defaultChecker(f: File) = Iterator(checkFile(f))
   private def checkArc(file: File) = {
     val fileNameExtension = file.getName.split('.').last
-    fileNameExtension match {
-      case "zip" => checkZip(file)
-      case "jar" => checkZip(file)
-      case "war" => checkZip(file)
-      case "apk" => checkZip(file)
-      case "epub" => checkZip(file)
-      case "tgz" => checkGzip(file)
-      case "gz" => checkGzip(file)
-      case "bz2" => checkBz2(file)
-      case "7z" => check7Zip(file)
-      case _ => Iterator(checkFile(file))
-    }
+    arcCheckers.getOrElse(fileNameExtension, defaultChecker _)(file)
   }
 
   private def listAllFiles(dir: File): Array[File] = {
