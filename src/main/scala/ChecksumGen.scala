@@ -13,22 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-case class md5Tuple(md5sum: String, path: String, size: Long) {
-  override def toString = md5sum + ';' + path + ';' + size
-}
-
-object ChecksumGen {
-
-  import java.io.{ File, InputStream, FileInputStream, BufferedInputStream }
-  import org.apache.commons.compress.archivers.zip.ZipFile
-  import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-  import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
-  import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
-  import org.apache.commons.codec.digest.DigestUtils.{ getDigest, md5Hex }
+object DigestUtilsAddon {
+  import java.io.InputStream
+  import org.apache.commons.codec.digest.DigestUtils.getDigest
   import org.apache.commons.codec.binary.Hex.encodeHexString
 
-  val STREAM_BUFFER_LENGTH = 1024 * 64
-  private def md5HexChunk(data: InputStream, size: Long) = {
+  private val STREAM_BUFFER_LENGTH = 1024 * 64
+  def md5HexChunk(data: InputStream, size: Long) = {
     val MD = getDigest("MD5")
     var buffer = new Array[Byte](STREAM_BUFFER_LENGTH)
     var total = 0
@@ -40,32 +31,20 @@ object ChecksumGen {
     }
     encodeHexString(MD.digest)
   }
+}
 
-  private def checkFile(file: File) = {
-    val fIS = new BufferedInputStream(new FileInputStream(file))
-    val md5 = md5Hex(fIS)
-    fIS.close
-    md5Tuple(md5, file.getAbsolutePath, file.length)
-  }
+case class md5Tuple(md5sum: String, path: String, size: Long) {
+  override def toString = md5sum + ';' + path + ';' + size
+}
 
-  private def checkChunk(file: File, chunkSize: Long) = {
-    val fileSize = file.length
-    if (fileSize > chunkSize) {
-      val indexOfLastChunk = fileSize / chunkSize
-      val sizeOfLastChunk = fileSize % chunkSize
-      val fileAbsolutePath = file.getAbsolutePath
-      val fileInputStream = new BufferedInputStream(new FileInputStream(file))
-      val md5Array = (0 to indexOfLastChunk.toInt).map { i =>
-        val md5 = md5HexChunk(fileInputStream, chunkSize)
-        val path = fileAbsolutePath + "." + i
-        val size = if (i == indexOfLastChunk) sizeOfLastChunk else chunkSize
-        md5Tuple(md5, path, size)
-      }.toArray
-      fileInputStream.close
-      md5Array
-    } else
-      Array[md5Tuple]()
-  }
+object ArchiveCheckers {
+  import java.io.{ File, FileInputStream }
+  import org.apache.commons.compress.archivers.zip.ZipFile
+  import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+  import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
+  import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
+  import org.apache.commons.codec.digest.DigestUtils.md5Hex
+  import DigestUtilsAddon.md5HexChunk
 
   private def checkZip(file: File) = {
     try {
@@ -148,12 +127,51 @@ object ChecksumGen {
     "gz" -> checkGzip,
     "bz2" -> checkBz2,
     "7z" -> check7Zip)
-  private val knownExt = arcCheckers map { case (k, c) => k } toSet
   private def defaultChecker(f: File) = Iterator[md5Tuple]()
-  private def checkArc(file: File) = {
+  val knownExt = arcCheckers map { case (k, c) => k } toSet
+  def checkArc(file: File) = {
     val fileNameExtension = file.getName.split('.').last
     arcCheckers.getOrElse(fileNameExtension, defaultChecker _)(file)
   }
+}
+
+object FileCheckers {
+  import java.io.{ File, FileInputStream, BufferedInputStream }
+  import org.apache.commons.codec.digest.DigestUtils.md5Hex
+  import DigestUtilsAddon.md5HexChunk
+  
+  def checkFile(file: File) = {
+    val fIS = new BufferedInputStream(new FileInputStream(file))
+    val md5 = md5Hex(fIS)
+    fIS.close
+    md5Tuple(md5, file.getAbsolutePath, file.length)
+  }
+
+  def checkChunk(file: File, chunkSize: Long) = {
+    val fileSize = file.length
+    if (fileSize > chunkSize) {
+      val indexOfLastChunk = fileSize / chunkSize
+      val sizeOfLastChunk = fileSize % chunkSize
+      val fileAbsolutePath = file.getAbsolutePath
+      val fileInputStream = new BufferedInputStream(new FileInputStream(file))
+      val md5Array = (0 to indexOfLastChunk.toInt).map { i =>
+        val md5 = md5HexChunk(fileInputStream, chunkSize)
+        val path = fileAbsolutePath + "." + i
+        val size = if (i == indexOfLastChunk) sizeOfLastChunk else chunkSize
+        md5Tuple(md5, path, size)
+      }.toArray
+      fileInputStream.close
+      md5Array
+    } else
+      Array[md5Tuple]()
+  }
+}
+
+object ChecksumGen {
+
+  import java.io.File
+  import FileCheckers.{checkFile, checkChunk}
+  import ArchiveCheckers.checkArc
 
   private def listAllFiles(dir: File): Array[File] = {
     assert(dir.isDirectory)
