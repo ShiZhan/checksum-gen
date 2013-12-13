@@ -37,6 +37,7 @@ object ArchiveCheckers {
   import java.io.{ File, FileInputStream }
   import org.apache.commons.compress.archivers.ArchiveEntry
   import org.apache.commons.compress.archivers.zip.ZipFile
+  import org.apache.commons.compress.archivers.sevenz.SevenZFile
   import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
   import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
   import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
@@ -101,11 +102,35 @@ object ArchiveCheckers {
     }
   }
 
-  /*
-   * @TODO: handler for 7zip
-   */
   private def check7Zip(file: File) = {
-    Iterator[ArcEntryChecksum]()
+    import org.apache.commons.codec.digest.DigestUtils.getDigest
+    import org.apache.commons.codec.binary.Hex.encodeHexString
+
+    val STREAM_BUFFER_LENGTH = 1024 * 64
+    def md5Hex7Zip(data: SevenZFile, size: Long) = {
+      val MD = getDigest("MD5")
+      var buffer = new Array[Byte](STREAM_BUFFER_LENGTH)
+      var total = 0
+      val goal = size.toInt
+      while (total < goal) {
+        val read = data.read(buffer, 0, (goal - total) min STREAM_BUFFER_LENGTH)
+        total += read
+        MD.update(buffer, 0, read)
+      }
+      encodeHexString(MD.digest)
+    }
+    try {
+      val zf = new SevenZFile(file)
+      val entries = Iterator.continually { zf.getNextEntry }
+        .takeWhile(null !=).filter(!_.isDirectory)
+      entries map { e =>
+        val size = e.getSize
+        val md5 = md5Hex7Zip(zf, size)
+        ArcEntryChecksum(e, md5)
+      }
+    } catch {
+      case e: Exception => e.printStackTrace; Iterator[ArcEntryChecksum]()
+    }
   }
 
   type arcChecker = (File => Iterator[ArcEntryChecksum])
