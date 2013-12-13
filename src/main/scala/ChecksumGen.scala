@@ -37,7 +37,6 @@ object ArchiveCheckers {
   import java.io.{ File, FileInputStream }
   import org.apache.commons.compress.archivers.ArchiveEntry
   import org.apache.commons.compress.archivers.zip.ZipFile
-  import org.apache.commons.compress.archivers.sevenz.SevenZFile
   import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
   import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
   import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
@@ -103,6 +102,7 @@ object ArchiveCheckers {
   }
 
   private def check7Zip(file: File) = {
+    import org.apache.commons.compress.archivers.sevenz.SevenZFile
     import org.apache.commons.codec.digest.DigestUtils.getDigest
     import org.apache.commons.codec.binary.Hex.encodeHexString
 
@@ -119,6 +119,7 @@ object ArchiveCheckers {
       }
       encodeHexString(MD.digest)
     }
+
     try {
       val zf = new SevenZFile(file)
       val entries = Iterator.continually { zf.getNextEntry }
