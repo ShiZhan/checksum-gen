@@ -33,18 +33,21 @@ object DigestUtilsAddon {
   }
 }
 
-case class md5Tuple(md5sum: String, path: String, size: Long) {
-  override def toString = md5sum + ';' + path + ';' + size
-}
-
 object ArchiveCheckers {
   import java.io.{ File, FileInputStream }
+  import org.apache.commons.compress.archivers.ArchiveEntry
   import org.apache.commons.compress.archivers.zip.ZipFile
   import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
   import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
   import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
   import org.apache.commons.codec.digest.DigestUtils.md5Hex
   import DigestUtilsAddon.md5HexChunk
+
+  case class ArcEntryChecksum(e: ArchiveEntry, checksum: String) {
+    val path = e.getName
+    val size = e.getSize
+    override def toString = checksum + ';' + path + ';' + size
+  }
 
   private def checkZip(file: File) = {
     try {
@@ -54,15 +57,13 @@ object ArchiveCheckers {
         if (entries.hasMoreElements) entries.nextElement else null
       }.takeWhile(null !=).filter(!_.isDirectory)
       files map { e =>
-        val path = e.getName
-        val size = e.getSize
         val is = zf.getInputStream(e)
         val md5 = md5Hex(is)
         is.close
-        md5Tuple(md5, path, size)
+        ArcEntryChecksum(e, md5)
       }
     } catch {
-      case e: Exception => e.printStackTrace; Iterator[md5Tuple]()
+      case e: Exception => e.printStackTrace; Iterator[ArcEntryChecksum]()
     }
   }
 
@@ -74,13 +75,12 @@ object ArchiveCheckers {
       val files = Iterator.continually(tis.getNextTarEntry)
         .takeWhile(null !=).filter(_.isFile)
       files map { e =>
-        val path = e.getName
         val size = e.getSize
         val md5 = md5HexChunk(tis, size)
-        md5Tuple(md5, path, size)
+        ArcEntryChecksum(e, md5)
       }
     } catch {
-      case e: Exception => e.printStackTrace; Iterator[md5Tuple]()
+      case e: Exception => e.printStackTrace; Iterator[ArcEntryChecksum]()
     }
   }
 
@@ -92,13 +92,12 @@ object ArchiveCheckers {
       val files = Iterator.continually(tis.getNextTarEntry)
         .takeWhile(null !=).filter(_.isFile)
       files map { e =>
-        val path = e.getName
         val size = e.getSize
         val md5 = md5HexChunk(tis, size)
-        md5Tuple(md5, path, size)
+        ArcEntryChecksum(e, md5)
       }
     } catch {
-      case e: Exception => e.printStackTrace; Iterator[md5Tuple]()
+      case e: Exception => e.printStackTrace; Iterator[ArcEntryChecksum]()
     }
   }
 
@@ -106,10 +105,10 @@ object ArchiveCheckers {
    * @TODO: handler for 7zip
    */
   private def check7Zip(file: File) = {
-    Iterator[md5Tuple]()
+    Iterator[ArcEntryChecksum]()
   }
 
-  type arcChecker = (File => Iterator[md5Tuple])
+  type arcChecker = (File => Iterator[ArcEntryChecksum])
   private val arcCheckers = Map[String, arcChecker](
     "zip" -> checkZip,
     "jar" -> checkZip,
@@ -127,7 +126,7 @@ object ArchiveCheckers {
     "gz" -> checkGzip,
     "bz2" -> checkBz2,
     "7z" -> check7Zip)
-  private def defaultChecker(f: File) = Iterator[md5Tuple]()
+  private def defaultChecker(f: File) = Iterator[ArcEntryChecksum]()
   val knownExt = arcCheckers map { case (k, c) => k } toSet
   def checkArc(file: File) = {
     val fileNameExtension = file.getName.split('.').last
@@ -139,6 +138,10 @@ object FileCheckers {
   import java.io.{ File, FileInputStream, BufferedInputStream }
   import org.apache.commons.codec.digest.DigestUtils.md5Hex
   import DigestUtilsAddon.md5HexChunk
+
+  case class md5Tuple(md5sum: String, path: String, size: Long) {
+    override def toString = md5sum + ';' + path + ';' + size
+  }
 
   def checkFile(file: File) = {
     val fIS = new BufferedInputStream(new FileInputStream(file))
