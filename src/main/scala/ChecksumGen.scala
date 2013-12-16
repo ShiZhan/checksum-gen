@@ -153,8 +153,10 @@ object ArchiveCheckers {
     "bz2" -> checkBz2,
     "7z" -> check7Zip)
   private def defaultChecker(f: File) = Iterator[ArcEntryChecksum]()
-  val knownExt = arcCheckers map { case (k, c) => k } toSet
+  private val exts = arcCheckers map { case (k, c) => k } toSet
+  def extKnown(file: File) = exts contains file.getName.split('.').last
   def checkArc(file: File) = {
+    assert(file.isFile)
     val fileNameExtension = file.getName.split('.').last
     arcCheckers.getOrElse(fileNameExtension, defaultChecker _)(file)
   }
@@ -200,7 +202,7 @@ object ChecksumGen {
 
   import java.io.File
   import FileCheckers.{ checkFile, checkChunk }
-  import ArchiveCheckers.{ knownExt, checkArc }
+  import ArchiveCheckers.{ extKnown, checkArc }
 
   private def listAllFiles(dir: File): Array[File] = {
     assert(dir.isDirectory)
@@ -222,12 +224,18 @@ object ChecksumGen {
         val source = new File(fileName)
         if (!source.exists) println("input source does not exist")
         else if (source.isFile) {
-          if (knownExt contains source.getName.split('.').last)
+          if (extKnown(source))
             checkArc(source) foreach println
           else
             println("Unknown archive format")
-        } else
-          println("input source is not a file")
+        } else {
+          listAllFiles(source).foreach { f =>
+            if (f.isFile & extKnown(f)) {
+              println(checkFile(f))
+              checkArc(f) foreach println
+            }
+          }
+        }
       }
       case fileName :: chunkSizeStr :: Nil => {
         val source = new File(fileName)
