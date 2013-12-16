@@ -43,10 +43,10 @@ object ArchiveCheckers {
   import org.apache.commons.codec.digest.DigestUtils.md5Hex
   import DigestUtilsAddon.md5HexChunk
 
-  case class ArcEntryChecksum(e: ArchiveEntry, checksum: String) {
+  case class ArcEntryChecksum(e: ArchiveEntry, arcivePath: String, checksum: String) {
     val path = e.getName
     val size = e.getSize
-    override def toString = checksum + ';' + path + ';' + size
+    override def toString = checksum + ';' + arcivePath + path + ';' + size
   }
 
   private def checkZip(file: File) = {
@@ -60,7 +60,7 @@ object ArchiveCheckers {
         val is = zf.getInputStream(e)
         val md5 = md5Hex(is)
         is.close
-        ArcEntryChecksum(e, md5)
+        ArcEntryChecksum(e, file.getAbsolutePath, md5)
       }
     } catch {
       case e: Exception => e.printStackTrace; Iterator[ArcEntryChecksum]()
@@ -77,7 +77,7 @@ object ArchiveCheckers {
       files map { e =>
         val size = e.getSize
         val md5 = md5HexChunk(tis, size)
-        ArcEntryChecksum(e, md5)
+        ArcEntryChecksum(e, file.getAbsolutePath, md5)
       }
     } catch {
       case e: Exception => e.printStackTrace; Iterator[ArcEntryChecksum]()
@@ -94,7 +94,7 @@ object ArchiveCheckers {
       files map { e =>
         val size = e.getSize
         val md5 = md5HexChunk(tis, size)
-        ArcEntryChecksum(e, md5)
+        ArcEntryChecksum(e, file.getAbsolutePath, md5)
       }
     } catch {
       case e: Exception => e.printStackTrace; Iterator[ArcEntryChecksum]()
@@ -127,7 +127,7 @@ object ArchiveCheckers {
       entries map { e =>
         val size = e.getSize
         val md5 = md5Hex7Zip(zf, size)
-        ArcEntryChecksum(e, md5)
+        ArcEntryChecksum(e, file.getAbsolutePath, md5)
       }
     } catch {
       case e: Exception => e.printStackTrace; Iterator[ArcEntryChecksum]()
