@@ -46,7 +46,7 @@ object ArchiveCheckers {
   case class ArcEntryChecksum(e: ArchiveEntry, arcivePath: String, checksum: String) {
     val path = e.getName
     val size = e.getSize
-    override def toString = checksum + ';' + arcivePath + path + ';' + size
+    override def toString = checksum + ';' + arcivePath + '#' + path + ';' + size
   }
 
   private def checkZip(file: File) = {
