@@ -12,10 +12,15 @@ How to use:
 
 E.g.:
 
-`java -jar ChecksumGen-assembly-1.0.jar e:\test 65536`
+`java -jar ChecksumGen-assembly-1.0.jar`
+
+Show program usage.
+
+`java -jar ChecksumGen-assembly-1.0.jar -c 65536 e:\test`
 
 Which means list all files in **e:\test**, with corresponding md5 checksums, if any file is larger than the chunk size (65536), also list the checksum of every chunk.
 
-`java -jar ChecksumGen-assembly-1.0.jar ChecksumGen e:\test.zip --zip`
+`java -jar ChecksumGen-assembly-1.0.jar ChecksumGen -a e:\test.zip`
 
 Which means list all files in **e:\test.zip**, with corresponding md5 checksums.
+
