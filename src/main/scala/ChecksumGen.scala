@@ -210,6 +210,13 @@ object ChecksumGen {
     list ++ list.filter(_.isDirectory).flatMap(listAllFiles)
   }
 
+  val usage = """usage: ChecksumGen [-a|-c <chunk size>] <source>
+    -a: open <source> as compressed file,
+        or find & check all compressed file in <source> directory.
+    -c <chunk size>: check designated file or all files in directory,
+        list all chunk checksums for those larger than chunk size,
+        files are not actually chunked."""
+
   def main(args: Array[String]) = {
     args.toList match {
       case fileName :: Nil => {
@@ -218,9 +225,11 @@ object ChecksumGen {
         else if (source.isFile)
           println(checkFile(source))
         else
-          listAllFiles(source).filter(_.isFile) foreach { f => println(checkFile(f)) }
+          listAllFiles(source).foreach { f =>
+            if (f.isFile) println(checkFile(f))
+          }
       }
-      case fileName :: "--zip" :: Nil => {
+      case "-a" :: fileName :: Nil => {
         val source = new File(fileName)
         if (!source.exists) println("input source does not exist")
         else if (source.isFile) {
@@ -230,27 +239,23 @@ object ChecksumGen {
             println("Unknown archive format")
         } else {
           listAllFiles(source).foreach { f =>
-            if (f.isFile & extKnown(f)) {
-              println(checkFile(f))
-              checkArc(f) foreach println
-            }
+            if (f.isFile & extKnown(f)) checkArc(f) foreach println
           }
         }
       }
-      case fileName :: chunkSizeStr :: Nil => {
+      case "-c" :: chunkSizeStr :: fileName :: Nil => {
         val source = new File(fileName)
         val chunkSize = chunkSizeStr.toLong
         if (!source.exists) println("input source does not exist")
         else if (source.isFile)
           checkChunk(source, chunkSize) foreach println
         else {
-          listAllFiles(source).filter(_.isFile) foreach { f =>
-            println(checkFile(f))
-            checkChunk(f, chunkSize) foreach println
+          listAllFiles(source).foreach { f =>
+            if (f.isFile) checkChunk(f, chunkSize) foreach println
           }
         }
       }
-      case _ => println("usage: ChecksumGen <source> [<chunk size> <--zip>]")
+      case _ => println(usage)
     }
   }
 
