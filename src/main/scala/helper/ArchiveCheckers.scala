@@ -126,9 +126,9 @@ object ArchiveCheckers {
     "7z" -> check7Zip)
   private def defaultChecker(f: File) = Iterator[ArcEntryChecksum]()
   private val exts = arcCheckers map { case (k, c) => k } toSet
-  def extKnown(file: File) = exts contains file.getName.split('.').last
+  def isKnownArchive(file: File) =
+    (exts contains file.getName.split('.').last) & file.isFile
   def checkArc(file: File) = {
-    assert(file.isFile)
     val fileNameExtension = file.getName.split('.').last
     arcCheckers.getOrElse(fileNameExtension, defaultChecker _)(file)
   }

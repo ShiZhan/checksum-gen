@@ -15,7 +15,7 @@
  */
 object ChecksumGen {
   import java.io.File
-  import helper.ArchiveCheckers.{ extKnown, checkArc }
+  import helper.ArchiveCheckers.{ isKnownArchive, checkArc }
   import helper.FileEx.FileOps
 
   val usage = """usage: ChecksumGen [-a|-c <chunk size>] <directory|file>
@@ -28,7 +28,7 @@ object ChecksumGen {
         if (f.isFile) println(f.checksum + ';' + f.getAbsolutePath + ';' + f.length)
       }
       case "-a" :: fileName :: Nil => new File(fileName).flatten.foreach { f =>
-        if (f.isFile & extKnown(f)) checkArc(f) foreach println
+        if (isKnownArchive(f)) checkArc(f) foreach println
       }
       case "-c" :: chunkSizeStr :: fileName :: Nil => {
         val chunkSize = chunkSizeStr.toLong
