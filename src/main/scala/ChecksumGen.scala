@@ -18,33 +18,23 @@ object ChecksumGen {
   import helper.ArchiveCheckers.{ extKnown, checkArc }
   import helper.FileEx.FileOps
 
-  val usage = """usage: ChecksumGen [-a|-c <chunk size>] <source>
-    -a: treat <source> as compressed file or folder contains them.
-    -c <chunk size>: check designated file or all files in directory,
-        list all chunk checksums for those larger than chunk size,
-        files are not actually chunked."""
+  val usage = """usage: ChecksumGen [-a|-c <chunk size>] <directory|file>
+    -a: compressed file only
+    -c: list all chunk checksums for those larger than chunk size"""
 
   def main(args: Array[String]) = {
     args.toList match {
-      case fileName :: Nil => {
-        val source = new File(fileName)
-        source.flatten.foreach { f =>
-          if (f.isFile)
-            println(f.checksum + "; " + f.getAbsolutePath + "; " + f.length)
-        }
+      case fileName :: Nil => new File(fileName).flatten.foreach { f =>
+        if (f.isFile) println(f.checksum + ';' + f.getAbsolutePath + ';' + f.length)
       }
-      case "-a" :: fileName :: Nil => {
-        val source = new File(fileName)
-        source.flatten.foreach { f =>
-          if (f.isFile & extKnown(f)) checkArc(f) foreach println
-        }
+      case "-a" :: fileName :: Nil => new File(fileName).flatten.foreach { f =>
+        if (f.isFile & extKnown(f)) checkArc(f) foreach println
       }
       case "-c" :: chunkSizeStr :: fileName :: Nil => {
-        val source = new File(fileName)
         val chunkSize = chunkSizeStr.toLong
-        source.flatten.foreach { f =>
+        new File(fileName).flatten.foreach { f =>
           if (f.isFile) f.checksum(chunkSize).map {
-            case (i, s, m) => m + "; " + f.getAbsolutePath + '.' + i + "; " + s
+            case (i, s, m) => m + ';' + f.getAbsolutePath + '.' + i + ';' + s
           } foreach println
         }
       }
