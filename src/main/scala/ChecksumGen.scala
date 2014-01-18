@@ -15,8 +15,8 @@
  */
 object ChecksumGen {
   import java.io.File
-  import helper.ArchiveCheckers.{ isKnownArchive, checkArc }
-  import helper.FileEx.FileOps
+  import common.ArchiveEx.{ isKnownArchive, checkArc }
+  import common.FileEx.FileOps
 
   val usage = """usage: ChecksumGen [-a|-c <chunk size>] <directory|file>
     -a: compressed file only

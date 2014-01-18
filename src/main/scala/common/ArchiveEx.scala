@@ -1,11 +1,11 @@
-package helper
+package common
 
 /**
  * @author ShiZhan
  * Archive file checker
  * for calculating md5 checksum from Archive Entries
  */
-object ArchiveCheckers {
+object ArchiveEx {
   import java.io.{ File, FileInputStream }
   import org.apache.commons.compress.archivers.ArchiveEntry
   import org.apache.commons.compress.archivers.zip.ZipFile
