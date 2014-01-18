@@ -6,10 +6,9 @@ package common
 /**
  * @author ShiZhan
  * Archive file Operations
- * CheckArc: calculating md5 checksum from recognized Archive Entries
  */
 object ArchiveEx {
-  import java.io.{ File, FileInputStream }
+  import java.io.{ File, FileInputStream, InputStream }
   import org.apache.commons.compress.archivers.ArchiveEntry
   import org.apache.commons.compress.archivers.zip.ZipFile
   import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
@@ -17,6 +16,12 @@ object ArchiveEx {
   import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
   import org.apache.commons.codec.digest.DigestUtils.md5Hex
   import DigestUtilsAddon.md5HexChunk
+
+  implicit class InputStreamAsArchiveStream(is: InputStream) {
+    def asGzip = new GzipCompressorInputStream(is)
+    def asBzip = new BZip2CompressorInputStream(is)
+    def asTar = new TarArchiveInputStream(is)
+  }
 
   case class ArcEntryChecksum(e: ArchiveEntry, arcivePath: String, checksum: String) {
     val path = e.getName
