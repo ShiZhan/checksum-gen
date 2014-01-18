@@ -1,9 +1,12 @@
+/**
+ * Archive file Operations
+ */
 package common
 
 /**
  * @author ShiZhan
- * Archive file checker
- * for calculating md5 checksum from Archive Entries
+ * Archive file Operations
+ * CheckArc: calculating md5 checksum from recognized Archive Entries
  */
 object ArchiveEx {
   import java.io.{ File, FileInputStream }
@@ -22,8 +25,8 @@ object ArchiveEx {
   }
 
   private def checkZip(file: File) = {
+    val zf = new ZipFile(file)
     try {
-      val zf = new ZipFile(file)
       val entries = zf.getEntries
       val files = Iterator.continually {
         if (entries.hasMoreElements) entries.nextElement else null
@@ -92,8 +95,8 @@ object ArchiveEx {
       encodeHexString(MD.digest)
     }
 
+    val zf = new SevenZFile(file)
     try {
-      val zf = new SevenZFile(file)
       val entries = Iterator.continually { zf.getNextEntry }
         .takeWhile(null !=).filter(!_.isDirectory)
       entries map { e =>
@@ -107,6 +110,7 @@ object ArchiveEx {
   }
 
   type arcChecker = (File => Iterator[ArcEntryChecksum])
+
   private val arcCheckers = Map[String, arcChecker](
     "zip" -> checkZip,
     "jar" -> checkZip,
@@ -124,12 +128,12 @@ object ArchiveEx {
     "gz" -> checkGzip,
     "bz2" -> checkBz2,
     "7z" -> check7Zip)
-  private def defaultChecker(f: File) = Iterator[ArcEntryChecksum]()
-  private val exts = arcCheckers map { case (k, c) => k } toSet
-  def isKnownArchive(file: File) =
-    (exts contains file.getName.split('.').last) & file.isFile
-  def checkArc(file: File) = {
-    val fileNameExtension = file.getName.split('.').last
-    arcCheckers.getOrElse(fileNameExtension, defaultChecker _)(file)
+
+  def getChecker(file: File) = {
+    val ext = file.getName.split('.').last
+    arcCheckers.get(ext) match {
+      case checker: Some[arcChecker] => checker.get
+      case _ => None
+    }
   }
 }
