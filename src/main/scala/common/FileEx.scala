@@ -1,3 +1,6 @@
+/**
+ * Additional File methods
+ */
 package common
 
 /**
@@ -8,6 +11,12 @@ object FileEx {
   import java.io._
   import org.apache.commons.codec.digest.DigestUtils.md5Hex
   import DigestUtilsAddon.md5HexChunk
+
+  implicit class FileName(name: String) {
+    def toFile = new File(name)
+    def setExt(ext: String) =
+      if (name.split('.').last == ext) name else name + '.' + ext
+  }
 
   private def listAllFiles(file: File): Array[File] = {
     val list = file.listFiles
@@ -54,14 +63,16 @@ object FileEx {
         case e: Exception => Array[(Int, Long, String)]()
       }
 
+    def getWriter =
+      new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)))
+
+    def getReader =
+      new BufferedReader(new InputStreamReader(new FileInputStream(file)))
+
     def getWriter(coding: String) =
-      new BufferedWriter(
-        new OutputStreamWriter(
-          new FileOutputStream(file), coding))
+      new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), coding))
 
     def getReader(coding: String) =
-      new BufferedReader(
-        new InputStreamReader(
-          new FileInputStream(file), coding))
+      new BufferedReader(new InputStreamReader(new FileInputStream(file), coding))
   }
 }

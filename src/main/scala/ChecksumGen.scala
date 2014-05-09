@@ -16,7 +16,7 @@
 object ChecksumGen {
   import java.io.File
   import common.ArchiveEx._
-  import common.FileEx.FileOps
+  import common.FileEx._
 
   val usage = """usage: ChecksumGen [-a|-c <chunk size>] <directory|file>
     -a: compressed file only
@@ -24,10 +24,10 @@ object ChecksumGen {
 
   def main(args: Array[String]) = {
     args.toList match {
-      case fileName :: Nil => new File(fileName).flatten.foreach { f =>
+      case fileName :: Nil => fileName.toFile.flatten.foreach { f =>
         if (f.isFile) println(f.checksum + ';' + f.getAbsolutePath + ';' + f.length)
       }
-      case "-a" :: fileName :: Nil => new File(fileName).flatten.foreach { f =>
+      case "-a" :: fileName :: Nil => fileName.toFile.flatten.foreach { f =>
         if (f.isFile) getChecker(f) match {
           case checker: arcChecker => checker(f) foreach println
           case _ => {}
@@ -35,7 +35,7 @@ object ChecksumGen {
       }
       case "-c" :: chunkSizeStr :: fileName :: Nil => {
         val chunkSize = chunkSizeStr.toLong
-        new File(fileName).flatten.foreach { f =>
+        fileName.toFile.flatten.foreach { f =>
           if (f.isFile) f.checksum(chunkSize).map {
             case (i, s, m) => m + ';' + f.getAbsolutePath + '.' + i + ';' + s
           } foreach println

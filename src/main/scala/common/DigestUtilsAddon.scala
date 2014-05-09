@@ -1,3 +1,6 @@
+/**
+ * Apache commons-codec DigestUtils Addon
+ */
 package common
 
 /**
