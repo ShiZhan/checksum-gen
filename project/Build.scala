@@ -5,7 +5,7 @@ object MyBuild extends Build {
   lazy val buildSettings = Defaults.defaultSettings ++ Seq(
     version := "0.1-SNAPSHOT",
     organization := "com.simba",
-    scalaVersion := "2.10.3"
+    scalaVersion := "2.11.6"
   )
 
   lazy val ChecksumGen = Project(
