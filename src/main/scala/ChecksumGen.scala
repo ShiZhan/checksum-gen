@@ -27,20 +27,18 @@ object ChecksumGen {
       case fileName :: Nil => fileName.toFile.flatten.foreach { f =>
         if (f.isFile) println(f.checksum + ';' + f.getAbsolutePath + ';' + f.length)
       }
-      case "-a" :: fileName :: Nil => fileName.toFile.flatten.foreach { f =>
-        if (f.isFile) getChecker(f) match {
-          case checker: arcChecker => checker(f) foreach println
-          case _ => {}
-        }
-      }
-      case "-c" :: chunkSizeStr :: fileName :: Nil => {
-        val chunkSize = chunkSizeStr.toLong
-        fileName.toFile.flatten.foreach { f =>
-          if (f.isFile) f.checksum(chunkSize).map {
-            case (i, s, m) => m + ';' + f.getAbsolutePath + '.' + i + ';' + s
-          } foreach println
-        }
-      }
+      case "-a" :: fileName :: Nil =>
+        for (
+          f <- fileName.toFile.flatten if f.isFile;
+          c = getChecker(f);
+          e <- c.get(f) if c.isDefined
+        ) println(e)
+      case "-c" :: chunkSizeStr :: fileName :: Nil =>
+        for (
+          f <- fileName.toFile.flatten if f.isFile;
+          (i, s, m) <- f.checksum(chunkSizeStr.toLong);
+          e = s"$m;${f.getAbsolutePath}.$i;$s"
+        ) println(e)
       case _ => println(usage)
     }
   }
