@@ -10,7 +10,7 @@ package common
 object ArchiveEx {
   import java.io.{ File, FileInputStream, InputStream }
   import org.apache.commons.compress.archivers.ArchiveEntry
-  import org.apache.commons.compress.archivers.zip.ZipFile
+  import org.apache.commons.compress.archivers.zip.{ ZipArchiveEntry, ZipFile }
   import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
   import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
   import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
@@ -26,24 +26,24 @@ object ArchiveEx {
   case class ArcEntryChecksum(e: ArchiveEntry, arcivePath: String, checksum: String) {
     val path = e.getName
     val size = e.getSize
-    override def toString = checksum + ';' + arcivePath + '#' + path + ';' + size
+    override def toString = s"$checksum;$arcivePath#$path;$size"
   }
 
   private def checkZip(file: File) = {
     val zf = new ZipFile(file)
+    def getChecksum(e: ZipArchiveEntry) = {
+      val is = zf.getInputStream(e)
+      val md5 = md5Hex(is)
+      is.close
+      ArcEntryChecksum(e, file.getAbsolutePath, md5)
+    }
     try {
       val entries = zf.getEntries
-      val files = Iterator.continually {
-        if (entries.hasMoreElements) entries.nextElement else null
-      }.takeWhile(_ != null).filterNot(_.isDirectory)
-      files map { e =>
-        val is = zf.getInputStream(e)
-        val md5 = md5Hex(is)
-        is.close
-        ArcEntryChecksum(e, file.getAbsolutePath, md5)
-      }
+      Iterator.continually {
+        if (entries.hasMoreElements) Some(entries.nextElement) else None
+      }.takeWhile(_.isDefined).map(_.get).filterNot(_.isDirectory).map(getChecksum)
     } catch {
-      case e: Exception => e.printStackTrace; Iterator[ArcEntryChecksum]()
+      case e: Exception => e.printStackTrace; Iterator.empty
     }
   }
 
@@ -60,7 +60,7 @@ object ArchiveEx {
         ArcEntryChecksum(e, file.getAbsolutePath, md5)
       }
     } catch {
-      case e: Exception => e.printStackTrace; Iterator[ArcEntryChecksum]()
+      case e: Exception => e.printStackTrace; Iterator.empty
     }
   }
 
@@ -77,7 +77,7 @@ object ArchiveEx {
         ArcEntryChecksum(e, file.getAbsolutePath, md5)
       }
     } catch {
-      case e: Exception => e.printStackTrace; Iterator[ArcEntryChecksum]()
+      case e: Exception => e.printStackTrace; Iterator.empty
     }
   }
 
@@ -102,15 +102,14 @@ object ArchiveEx {
 
     val zf = new SevenZFile(file)
     try {
-      val entries = Iterator.continually { zf.getNextEntry }
-        .takeWhile(_ != null).filterNot(_.isDirectory)
-      entries map { e =>
-        val size = e.getSize
-        val md5 = md5Hex7Zip(zf, size)
-        ArcEntryChecksum(e, file.getAbsolutePath, md5)
-      }
+      Iterator.continually(zf.getNextEntry)
+        .takeWhile(_ != null).filterNot(_.isDirectory).map { e =>
+          val size = e.getSize
+          val md5 = md5Hex7Zip(zf, size)
+          ArcEntryChecksum(e, file.getAbsolutePath, md5)
+        }
     } catch {
-      case e: Exception => e.printStackTrace; Iterator[ArcEntryChecksum]()
+      case e: Exception => e.printStackTrace; Iterator.empty
     }
   }
 

@@ -27,9 +27,7 @@ object MyBuild extends Build {
   lazy val ChecksumGen = Project(
     id = "ChecksumGen",
     base = file("."),
-    settings = commonSettings ++
-    sbtassembly.Plugin.assemblySettings ++
-    Seq(
+    settings = commonSettings ++ assemblySettings ++ Seq(
       logLevel in assembly := Level.Warn
     )
   )
