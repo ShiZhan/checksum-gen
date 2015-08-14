@@ -12,7 +12,7 @@ object FileEx {
   import org.apache.commons.codec.digest.DigestUtils.md5Hex
   import DigestUtilsAddon.md5HexChunk
 
-  implicit class FileName(name: String) {
+  implicit class FileNameOps(name: String) {
     def toFile = new File(name)
     def setExt(ext: String) =
       if (name.split('.').last == ext) name else name + '.' + ext
@@ -21,7 +21,7 @@ object FileEx {
   private def listAllFiles(file: File): Array[File] = {
     val list = file.listFiles
     if (list == null)
-      Array[File]()
+      Array.empty[File]
     else
       list ++ list.filter(_.isDirectory).flatMap(listAllFiles)
   }
@@ -33,7 +33,7 @@ object FileEx {
       else
         Array.empty[File]
 
-    def checksum =
+    def checksum(): String =
       try {
         val fIS = new BufferedInputStream(new FileInputStream(file))
         val md5 = md5Hex(fIS)
@@ -43,7 +43,7 @@ object FileEx {
         case e: Exception => ""
       }
 
-    def checksum(chunkSize: Long) =
+    def checksum(chunkSize: Long): Array[(Int, Long, String)] =
       try {
         val fileSize = file.length
         if (fileSize > chunkSize) {
@@ -58,9 +58,9 @@ object FileEx {
           fileInputStream.close
           md5Array
         } else
-          Array[(Int, Long, String)]()
+          Array((0, fileSize, checksum()))
       } catch {
-        case e: Exception => Array[(Int, Long, String)]()
+        case e: Exception => Array.empty[(Int, Long, String)]
       }
 
     def getWriter =

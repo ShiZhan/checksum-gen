@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 object ChecksumGen {
-  import java.io.File
   import common.ArchiveEx._
   import common.FileEx._
 
@@ -22,29 +21,27 @@ object ChecksumGen {
     -a: compressed file only
     -c: list all chunk checksums for those larger than chunk size"""
 
-  def main(args: Array[String]) = {
-    args.toList match {
-      case "-a" :: fileNames =>
-        for (
-          fileName <- fileNames;
-          f <- fileName.toFile.flatten if f.isFile;
-          c = getChecker(f);
-          e <- c.get(f) if c.isDefined
-        ) println(e)
-      case "-c" :: chunkSizeStr :: fileNames =>
-        for (
-          fileName <- fileNames;
-          f <- fileName.toFile.flatten if f.isFile;
-          (i, s, m) <- f.checksum(chunkSizeStr.toLong);
-          e = s"$m;${f.getAbsolutePath}.$i;$s"
-        ) println(e)
-      case fileNames if fileNames.nonEmpty =>
-        for (
-          fileName <- fileNames;
-          f <- fileName.toFile.flatten if f.isFile;
-          e = s"${f.checksum};${f.getAbsolutePath};${f.length}"
-        ) println(e)
-      case _ => println(usage)
-    }
+  def main(args: Array[String]) = args.toList match {
+    case "-a" :: fileNames =>
+      for (
+        fileName <- fileNames;
+        f <- fileName.toFile.flatten if f.isFile;
+        c = getChecker(f);
+        e <- c.get(f) if c.isDefined
+      ) println(e)
+    case "-c" :: chunkSizeStr :: fileNames =>
+      for (
+        fileName <- fileNames;
+        f <- fileName.toFile.flatten if f.isFile;
+        (i, s, m) <- f.checksum(chunkSizeStr.toLong);
+        e = s"$m;${f.getAbsolutePath}.$i;$s"
+      ) println(e)
+    case fileNames if fileNames.nonEmpty =>
+      for (
+        fileName <- fileNames;
+        f <- fileName.toFile.flatten if f.isFile;
+        e = s"${f.checksum};${f.getAbsolutePath};${f.length}"
+      ) println(e)
+    case _ => println(usage)
   }
 }
