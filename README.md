@@ -8,7 +8,7 @@ How to use:
 2. run `sbt assembly`
 3. copy the **ChecksumGen-assembly-1.0.jar** anywhere and run
 
-[download](http://goo.gl/nINYvb)
+[download](http://share.weiyun.com/95fd4da504454566457b6f7efa1dd8d8)
 
 E.g.:
 
