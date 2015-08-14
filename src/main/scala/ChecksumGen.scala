@@ -24,20 +24,25 @@ object ChecksumGen {
 
   def main(args: Array[String]) = {
     args.toList match {
-      case fileName :: Nil => fileName.toFile.flatten.foreach { f =>
-        if (f.isFile) println(f.checksum + ';' + f.getAbsolutePath + ';' + f.length)
-      }
-      case "-a" :: fileName :: Nil =>
+      case "-a" :: fileNames =>
         for (
+          fileName <- fileNames;
           f <- fileName.toFile.flatten if f.isFile;
           c = getChecker(f);
           e <- c.get(f) if c.isDefined
         ) println(e)
-      case "-c" :: chunkSizeStr :: fileName :: Nil =>
+      case "-c" :: chunkSizeStr :: fileNames =>
         for (
+          fileName <- fileNames;
           f <- fileName.toFile.flatten if f.isFile;
           (i, s, m) <- f.checksum(chunkSizeStr.toLong);
           e = s"$m;${f.getAbsolutePath}.$i;$s"
+        ) println(e)
+      case fileNames if fileNames.nonEmpty =>
+        for (
+          fileName <- fileNames;
+          f <- fileName.toFile.flatten if f.isFile;
+          e = s"${f.checksum};${f.getAbsolutePath};${f.length}"
         ) println(e)
       case _ => println(usage)
     }
