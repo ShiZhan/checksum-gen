@@ -31,7 +31,7 @@ object FileEx {
       if (file.exists)
         if (file.isDirectory) listAllFiles(file) else Array(file)
       else
-        Array[File]()
+        Array.empty[File]
 
     def checksum =
       try {
