@@ -26,8 +26,8 @@ object ChecksumGen {
       for (
         fileName <- fileNames;
         f <- fileName.toFile.flatten if f.isFile;
-        c = getChecker(f);
-        e <- c.get(f) if c.isDefined
+        c = getChecker(f) if c.isDefined;
+        e <- c.get(f)
       ) println(e)
     case "-c" :: chunkSizeStr :: fileNames =>
       for (
