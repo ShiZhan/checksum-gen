@@ -33,8 +33,9 @@ object ChecksumGen {
       for (
         fileName <- fileNames;
         f <- fileName.toFile.flatten if f.isFile;
-        (i, s, m) <- f.checksum(chunkSizeStr.toLong);
-        e = s"$m;${f.getAbsolutePath}.$i;$s"
+        path = f.getAbsolutePath;
+        (id, size, checksum) <- f.checksum(chunkSizeStr.toLong);
+        e = s"$checksum;$path.$id;$size"
       ) println(e)
     case fileNames if fileNames.nonEmpty =>
       for (
