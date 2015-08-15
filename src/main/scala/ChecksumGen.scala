@@ -18,8 +18,8 @@ object ChecksumGen {
   import common.FileEx._
 
   val usage = """usage: ChecksumGen [-a|-c <chunk size>] <directory|file>
-    -a: compressed file only
-    -c: list all chunk checksums for those larger than chunk size"""
+  -a: compressed file only
+  -c: list all chunk checksums"""
 
   def main(args: Array[String]) = args.toList match {
     case "-a" :: fileNames =>
